@@ -173,6 +173,35 @@
     .accent-text {
       color: var(--accent-color);
     }
+    /* For the top row, each image takes 50% minus any margin if needed */
+    .result-images .top-images img {
+    width: 49%;  /* adjust if you want some spacing between them */
+    }
+
+    /* For the bottom image, set a maximum width and center it */
+    .result-images .bottom-image img {
+    max-width: 50%; /* or any desired width */
+    width: 100%;    /* ensures it scales responsively */
+    }
+    /* Architecture image styling */
+    .architecture-img {
+    margin-top: 1rem;
+    max-height: 300px;  /* increased height */
+    object-fit: contain;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    }
+
+    /* Tech Stack images styling: increased size */
+    .tech-img {
+    max-height: 120px;  /* increased for larger images */
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+    }
+
+
   </style>
 </head>
 <body>
@@ -292,70 +321,107 @@
     </div>
   </section>
 
-  <!-- Architecture & Tech Stack Section -->
-  <section class="py-5">
+<!-- Architecture & Tech Stack Section -->
+<section class="py-5">
     <div class="container">
       <div class="row g-4">
+        <!-- Architecture Card with Centered, Bigger Image -->
         <div class="col-md-6">
           <h2 class="section-title">ARCHITECTURE</h2>
           <div class="card p-4 h-100">
-            <div class="card-body">
+            <div class="card-body text-center">
               <p class="card-text">
                 Implemented a dynamic offloading framework for the edge, compared ML architectures for video classification on edge devices, implemented a novel edge-based architecture for violence detection.
               </p>
+              <!-- Centered and enlarged Architecture Image -->
+              <img src="divicla1.drawio.png" class="img-fluid architecture-img" alt="Architecture diagram">
             </div>
           </div>
         </div>
+        <!-- Tech Stack Card with 6 Images in 2 Columns and 3 Rows -->
         <div class="col-md-6">
           <h2 class="section-title">TECH STACK</h2>
           <div class="card p-4 h-100">
             <div class="card-body">
-              <ul class="list-unstyled">
-                <li class="mb-2">• Edge Computing Frameworks</li>
-                <li class="mb-2">• Computer Vision Libraries</li>
-                <li class="mb-2">• Machine Learning Models</li>
-                <li class="mb-2">• Privacy-Preserving Technologies</li>
-              </ul>
+              <div class="container">
+                <!-- First Row: 2 Images -->
+                <div class="row">
+                  <div class="col-6">
+                    <img src="raspi.png" class="img-fluid tech-img" alt="Raspberry Pi">
+                  </div>
+                  <div class="col-6">
+                    <img src="pytorch.png" class="img-fluid tech-img" alt="Pytorch">
+                  </div>
+                </div>
+                <!-- Second Row: 2 Images -->
+                <div class="row mt-3">
+                  <div class="col-6">
+                    <br><br>
+                    <img src="yolo_logo.jpeg" class="img-fluid tech-img" alt="Ultralytics">
+                  </div>
+                  <div class="col-6">
+                    <img src="go.png" class="img-fluid tech-img" alt="Golang">
+                  </div>
+                </div>
+                <!-- Third Row: 2 Images -->
+                <div class="row mt-3">
+                  <div class="col-6">
+                    <br>
+                    <img src="python.png" class="img-fluid tech-img" alt="Python">
+                  </div>
+                  <div class="col-6">
+                    <br>
+                    <img src="docker.png" class="img-fluid tech-img" alt="Docker">
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </section>
+  </section>  
 
   <!-- Results Section -->
-  <section class="py-5">
+<section class="py-5">
     <div class="container">
       <h2 class="section-title text-center">RESULTS</h2>
-      <div class="row g-4">
-        <div class="col-md-6">
-          <div class="card p-4">
-            <h3 class="card-title mb-4">GRAPH</h3>
-            <div class="bg-light p-5 text-center">
-              <p class="text-muted">Graph Visualization</p>
-            </div>
-          </div>
+      <!-- Graphs Card -->
+      <div class="card p-4 mb-4">
+        <h3 class="card-title mb-4">GRAPH</h3>
+        <div class="bg-light p-5 text-center d-flex justify-content-around align-items-center">
+            <div class="result-images">
+                <!-- Top Row with Two Images -->
+                <div class="top-images d-flex justify-content-between">
+                  <img src="3dcnn.jpg" class="img-fluid" alt="Accuracy graph">
+                  <img src="3dcnn_loss.jpg" class="img-fluid" alt="Loss graph">
+                </div>
+                <!-- Bottom Row with Centered Image -->
+                <div class="bottom-image text-center mt-3">
+                  <img src="3dcnn_confusionmatrix.jpg" class="img-fluid" alt="Confusion Matrix">
+                </div>
+              </div>
+                           
         </div>
-        <div class="col-md-6">
-          <div class="card p-4">
-            <h3 class="card-title mb-4">METRICS</h3>
-            <div class="metric-item">
-              <span class="metric-label">ACCURACY</span>
-              <span class="metric-value">0.82</span>
-            </div>
-            <div class="metric-item">
-              <span class="metric-label">PRECISION</span>
-              <span class="metric-value">0.83</span>
-            </div>
-            <div class="metric-item">
-              <span class="metric-label">RECALL</span>
-              <span class="metric-value">0.81</span>
-            </div>
-            <div class="metric-item">
-              <span class="metric-label">F1-SCORE</span>
-              <span class="metric-value">0.82</span>
-            </div>
-          </div>
+      </div>
+      <!-- Metrics Card -->
+      <div class="card p-4">
+        <h3 class="card-title mb-4">METRICS</h3>
+        <div class="metric-item">
+          <span class="metric-label">ACCURACY</span>
+          <span class="metric-value">0.82</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">PRECISION</span>
+          <span class="metric-value">0.83</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">RECALL</span>
+          <span class="metric-value">0.81</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">F1-SCORE</span>
+          <span class="metric-value">0.82</span>
         </div>
       </div>
     </div>
