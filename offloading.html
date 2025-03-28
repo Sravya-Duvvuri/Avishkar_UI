@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offloading - Edge Intelligence</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Custom CSS -->
+  <style>
+    :root {
+      --primary-color: #212529;
+      --secondary-color: #495057;
+      --accent-color: #b71152;
+      --accent-light: #e83e8c;
+      --accent-lighter: #f8d7e3;
+      --text-color: #f8f9fa;
+      --bg-color: #f8f9fa;
+    }
+    
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background-color: var(--bg-color);
+    }
+    
+    .font-oswald {
+      font-family: 'Oswald', sans-serif;
+    }
+    
+    .font-montserrat {
+      font-family: 'Montserrat', sans-serif;
+    }
+    
+    .navbar {
+      background-color: var(--primary-color) !important;
+    }
+    
+    .welcome-section {
+      background-color: var(--primary-color);
+      color: var(--text-color);
+      padding: 4rem 0;
+      margin-bottom: 3rem;
+      position: relative;
+    }
+    
+    .welcome-section::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(to right, var(--accent-color), var(--accent-light));
+    }
+    
+    .section-title {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      letter-spacing: 1px;
+      margin-bottom: 2rem;
+      color: var(--primary-color);
+      position: relative;
+      display: inline-block;
+    }
+    
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 0;
+      width: 40px;
+      height: 3px;
+      background-color: var(--accent-color);
+    }
+    
+    .card {
+      border: none;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+      height: 100%;
+      border-top: 3px solid transparent;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+      border-top: 3px solid var(--accent-color);
+    }
+    
+    .card-title {
+      font-family: 'Oswald', sans-serif;
+      color: var(--primary-color);
+    }
+    
+    .btn-dark {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+    
+    .btn-accent {
+      background-color: var(--accent-color);
+      border-color: var(--accent-color);
+      color: white;
+    }
+    
+    .btn-accent:hover {
+      background-color: #95103f;
+      border-color: #95103f;
+      color: white;
+    }
+    
+    footer {
+      background-color: var(--primary-color);
+      color: var(--text-color);
+      padding: 2rem 0;
+      margin-top: 3rem;
+      position: relative;
+    }
+    
+    footer::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(to right, var(--accent-color), var(--accent-light));
+    }
+    
+    .accent-text {
+      color: var(--accent-color);
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <div class="container">
+      <a class="navbar-brand font-oswald" href="index.html">EDGE INTELLIGENCE</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="index.html">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="offloading.html">Offloading</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="face-anonymizer.html">Face Anonymizer</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="yolo.html">YOLO</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Welcome Section -->
+  <section class="welcome-section">
+    <div class="container text-center">
+      <h1 class="display-4 font-oswald mb-4">WELCOME TO <span class="accent-text">OFFLOADING</span></h1>
+      <p class="lead font-montserrat">Explore our dynamic offloading framework for edge devices</p>
+    </div>
+  </section>
+
+  <!-- Content Section -->
+  <section class="py-5">
+    <div class="container">
+      <div class="card p-4 mb-5">
+        <div class="card-body">
+          <h2 class="card-title mb-4">Dynamic Offloading Framework</h2>
+          <p class="lead">
+            Our dynamic offloading framework optimizes processing between edge devices and cloud resources, ensuring efficient operation without compromising device performance.
+          </p>
+          
+          <div class="row g-4 mt-5">
+            <div class="col-md-6">
+              <div class="card bg-light">
+                <div class="card-body">
+                  <h3 class="card-title h4">Edge Processing</h3>
+                  <p>
+                    Lightweight processing performed directly on edge devices to minimize latency and preserve privacy.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="card bg-light">
+                <div class="card-body">
+                  <h3 class="card-title h4">Cloud Offloading</h3>
+                  <p>
+                    Complex computations offloaded to cloud resources when necessary, based on device capabilities and network conditions.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card p-4">
+        <div class="card-body">
+          <h2 class="card-title mb-4">Offloading Decision Factors</h2>
+          <ul class="list-unstyled">
+            <li class="mb-3">• Device computational capacity</li>
+            <li class="mb-3">• Battery level and power constraints</li>
+            <li class="mb-3">• Network bandwidth and latency</li>
+            <li class="mb-3">• Task complexity and priority</li>
+            <li class="mb-3">• Privacy requirements of the data</li>
+          </ul>
+          
+          <div class="text-center mt-5">
+            <button class="btn btn-dark px-4 py-2 me-3">View Technical Details</button>
+            <button class="btn btn-accent px-4 py-2">Run Demo</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6">
+          <h3 class="font-oswald">AN EDGE INTELLIGENT APPROACH</h3>
+          <p class="font-montserrat">To <span class="accent-text">Preventing Escalations</span></p>
+        </div>
+        <div class="col-md-6 text-md-end">
+          <p class="font-montserrat">© 2025 Edge Intelligence Team. All rights reserved.</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

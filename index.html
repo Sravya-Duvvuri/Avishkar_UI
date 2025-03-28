@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edge Intelligence</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Custom CSS -->
+  <style>
+    :root {
+      --primary-color: #212529;
+      --secondary-color: #495057;
+      --accent-color: #b71152;
+      --accent-light: #e83e8c;
+      --accent-lighter: #f8d7e3;
+      --text-color: #f8f9fa;
+      --bg-color: #f8f9fa;
+    }
+    
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background-color: var(--bg-color);
+    }
+    
+    .font-oswald {
+      font-family: 'Oswald', sans-serif;
+    }
+    
+    .font-montserrat {
+      font-family: 'Montserrat', sans-serif;
+    }
+    
+    .navbar {
+      background-color: var(--primary-color) !important;
+    }
+    
+    .hero-section {
+      background-color: var(--primary-color);
+      color: var(--text-color);
+      padding: 5rem 0;
+      position: relative;
+    }
+    
+    .hero-section::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(to right, var(--accent-color), var(--accent-light));
+    }
+    
+    .section-title {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      letter-spacing: 1px;
+      margin-bottom: 2rem;
+      color: var(--primary-color);
+      position: relative;
+      display: inline-block;
+    }
+    
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 0;
+      width: 40px;
+      height: 3px;
+      background-color: var(--accent-color);
+    }
+    
+    .card {
+      border: none;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+      height: 100%;
+      border-top: 3px solid transparent;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+      border-top: 3px solid var(--accent-color);
+    }
+    
+    .card-title {
+      font-family: 'Oswald', sans-serif;
+      color: var(--primary-color);
+    }
+    
+    .btn-primary {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+    
+    .btn-outline-primary {
+      color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+    
+    .btn-outline-primary:hover {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .btn-accent {
+      background-color: var(--accent-color);
+      border-color: var(--accent-color);
+      color: white;
+    }
+    
+    .btn-accent:hover {
+      background-color: #95103f;
+      border-color: #95103f;
+      color: white;
+    }
+    
+    .btn-outline-accent {
+      color: var(--accent-color);
+      border-color: var(--accent-color);
+    }
+    
+    .btn-outline-accent:hover {
+      background-color: var(--accent-color);
+      color: white;
+    }
+    
+    footer {
+      background-color: var(--primary-color);
+      color: var(--text-color);
+      padding: 2rem 0;
+      position: relative;
+    }
+    
+    footer::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(to right, var(--accent-color), var(--accent-light));
+    }
+    
+    .metric-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    
+    .metric-label {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 500;
+    }
+    
+    .metric-value {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 600;
+      color: var(--accent-color);
+    }
+    
+    .welcome-section {
+      background-color: var(--primary-color);
+      color: var(--text-color);
+      padding: 4rem 0;
+      margin-bottom: 3rem;
+    }
+    
+    .accent-text {
+      color: var(--accent-color);
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <div class="container">
+      <a class="navbar-brand font-oswald" href="index.html">EDGE INTELLIGENCE</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link active" href="index.html">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="offloading.html">Offloading</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="face-anonymizer.html">Face Anonymizer</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="yolo.html">YOLO</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="container text-center">
+      <h1 class="display-4 font-oswald mb-4">AN EDGE INTELLIGENT APPROACH TO <span class="accent-text">PREVENTING ESCALATIONS</span></h1>
+      <p class="lead font-montserrat mb-5">To design an edge-based framework for video classification and violence detection without affecting the regular functioning of the devices, while preserving the privacy of individuals captured in video footage</p>
+      <div class="d-flex justify-content-center gap-3">
+        <button class="btn btn-light font-montserrat px-4 py-2">Learn More</button>
+        <button class="btn btn-accent font-montserrat px-4 py-2">View Demo</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Objective Section -->
+  <section class="py-5">
+    <div class="container">
+      <h2 class="section-title text-center">OBJECTIVE</h2>
+      <div class="card p-4">
+        <p class="lead text-center">
+          To design an edge-based framework for video classification and violence detection without affecting the regular functioning of the devices, while preserving the privacy of individuals captured in video footage.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Team Section -->
+  <section class="py-5">
+    <div class="container">
+      <h2 class="section-title text-center">TEAM</h2>
+      <div class="row g-4">
+        <!-- Team Member 1 -->
+        <div class="col-md-4">
+          <div class="card p-4">
+            <div class="card-body">
+              <h3 class="card-title">AADITHYAA</h3>
+              <p class="card-text text-muted">CB.EN.U4CSE22114</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Team Member 2 -->
+        <div class="col-md-4">
+          <div class="card p-4">
+            <div class="card-body">
+              <h3 class="card-title">SRAVYA</h3>
+              <p class="card-text text-muted">CB.EN.U4CSE22353</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Team Member 3 -->
+        <div class="col-md-4">
+          <div class="card p-4">
+            <div class="card-body">
+              <h3 class="card-title">ANANTHAKRISHNAN</h3>
+              <p class="card-text text-muted">CB.EN.U4CSE22206</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Faculty Guides Section -->
+  <section class="py-5">
+    <div class="container">
+      <h2 class="section-title text-center">FACULTY GUIDES</h2>
+      <div class="row g-4 justify-content-center">
+        <!-- Guide 1 -->
+        <div class="col-md-5">
+          <div class="card p-4">
+            <div class="card-body">
+              <h3 class="card-title">DR. RITWIK M</h3>
+              <p class="card-text text-muted">Faculty Guide</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Guide 2 -->
+        <div class="col-md-5">
+          <div class="card p-4">
+            <div class="card-body">
+              <h3 class="card-title">DR. GIREESH KUMAR</h3>
+              <p class="card-text text-muted">Faculty Guide</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architecture & Tech Stack Section -->
+  <section class="py-5">
+    <div class="container">
+      <div class="row g-4">
+        <div class="col-md-6">
+          <h2 class="section-title">ARCHITECTURE</h2>
+          <div class="card p-4 h-100">
+            <div class="card-body">
+              <p class="card-text">
+                Implemented a dynamic offloading framework for the edge, compared ML architectures for video classification on edge devices, implemented a novel edge-based architecture for violence detection.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <h2 class="section-title">TECH STACK</h2>
+          <div class="card p-4 h-100">
+            <div class="card-body">
+              <ul class="list-unstyled">
+                <li class="mb-2">• Edge Computing Frameworks</li>
+                <li class="mb-2">• Computer Vision Libraries</li>
+                <li class="mb-2">• Machine Learning Models</li>
+                <li class="mb-2">• Privacy-Preserving Technologies</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Results Section -->
+  <section class="py-5">
+    <div class="container">
+      <h2 class="section-title text-center">RESULTS</h2>
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="card p-4">
+            <h3 class="card-title mb-4">GRAPH</h3>
+            <div class="bg-light p-5 text-center">
+              <p class="text-muted">Graph Visualization</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card p-4">
+            <h3 class="card-title mb-4">METRICS</h3>
+            <div class="metric-item">
+              <span class="metric-label">ACCURACY</span>
+              <span class="metric-value">0.82</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">PRECISION</span>
+              <span class="metric-value">0.83</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">RECALL</span>
+              <span class="metric-value">0.81</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">F1-SCORE</span>
+              <span class="metric-value">0.82</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Conclusion Section -->
+  <section class="py-5">
+    <div class="container">
+      <h2 class="section-title text-center">CONCLUSION</h2>
+      <div class="card p-4">
+        <p class="lead text-center">
+          Our edge-based framework successfully demonstrates effective video classification and violence detection while preserving privacy and maintaining device performance.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="mt-5">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6">
+          <h3 class="font-oswald">AN EDGE INTELLIGENT APPROACH</h3>
+          <p class="font-montserrat">To <span class="accent-text">Preventing Escalations</span></p>
+        </div>
+        <div class="col-md-6 text-md-end">
+          <p class="font-montserrat">© 2025 Edge Intelligence Team. All rights reserved.</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
