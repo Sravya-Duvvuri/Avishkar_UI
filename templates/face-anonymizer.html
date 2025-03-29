@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Anonymizer - Edge Intelligence</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Socket.IO Library (without integrity attribute) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- Custom CSS -->
+  <style>
+    :root {
+      --primary-color: #212529;
+      --secondary-color: #495057;
+      --accent-color: #b71152;
+      --accent-light: #e83e8c;
+      --accent-lighter: #f8d7e3;
+      --text-color: #f8f9fa;
+      --bg-color: #f8f9fa;
+    }
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background-color: var(--bg-color);
+    }
+    .font-oswald { font-family: 'Oswald', sans-serif; }
+    .font-montserrat { font-family: 'Montserrat', sans-serif; }
+    .navbar { background-color: var(--primary-color) !important; }
+    .welcome-section {
+      background-color: var(--primary-color);
+      color: var(--text-color);
+      padding: 4rem 0;
+      margin-bottom: 3rem;
+      position: relative;
+    }
+    .welcome-section::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(to right, var(--accent-color), var(--accent-light));
+    }
+    .card {
+      border: none;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease;
+      height: 100%;
+      border-top: 3px solid transparent;
+    }
+    .card:hover { transform: translateY(-5px); border-top: 3px solid var(--accent-color); }
+    .card-title { font-family: 'Oswald', sans-serif; color: var(--primary-color); }
+    .btn-accent { background-color: var(--accent-color); border-color: var(--accent-color); color: white; }
+    .btn-accent:hover { background-color: #95103f; border-color: #95103f; color: white; }
+    footer {
+      background-color: var(--primary-color);
+      color: var(--text-color);
+      padding: 2rem 0;
+      margin-top: 3rem;
+      position: relative;
+    }
+    footer::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(to right, var(--accent-color), var(--accent-light));
+    }
+    .accent-text { color: var(--accent-color); }
+    /* Demo Styles */
+    .demo-section { margin-bottom: 2rem; }
+    .demo-video { width: 100%; max-height: 400px; margin-bottom: 1rem; }
+    .processed-stream { width: 100%; max-height: 400px; }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <div class="container">
+      <a class="navbar-brand font-oswald" href="{{ url_for('face_anonymizer') }}">EDGE INTELLIGENCE</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link active" href="{{ url_for('index') }}">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('offloading') }}">Offloading</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('face_anonymizer') }}">Face Anonymizer</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('yolo_page') }}">YOLO</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Welcome Section -->
+  <section class="welcome-section text-center">
+    <div class="container">
+      <h1 class="display-4 font-oswald mb-4">WELCOME TO <span class="accent-text">FACE ANONYMIZER</span></h1>
+      <p class="lead font-montserrat">Preserving privacy while maintaining video analytics capabilities</p>
+    </div>
+  </section>
+
+  <!-- Demo Section -->
+  <section class="py-5">
+    <div class="container">
+      <!-- Info Card -->
+      <div class="card p-4 mb-5">
+        <div class="card-body">
+          <h2 class="card-title mb-4">Face Anonymization Technology</h2>
+          <p class="lead">
+            Our technology applies advanced face detection and blurring on video streams to protect identities.
+          </p>
+        </div>
+      </div>
+
+      <!-- Demo Card -->
+      <div class="card p-4">
+        <div class="card-body">
+          <h2 class="card-title mb-4">Demo</h2>
+          <!-- Uploaded Video Processing -->
+          <div class="demo-section">
+            <h4 class="mb-3">Uploaded Video Processing (AVI)</h4>
+            <input type="file" id="videoInput" accept="video/*" class="form-control mb-3">
+            <!-- Processed stream will be displayed here as an MJPEG stream -->
+            <img id="processedStream" class="processed-stream" src="" alt="Processed Video Stream">
+            <div class="text-center mt-3">
+              <button class="btn btn-accent px-4 py-2" onclick="startStream()">Process Video</button>
+              <button id="stopProcessingBtn" class="btn btn-danger">Stop Processing</button>
+            </div>
+          </div>
+          <hr class="my-4">
+          <!-- Realtime Webcam Processing -->
+          <div class="demo-section">
+            <h4 class="mb-3">Realtime Webcam Processing</h4>
+            <div class="row">
+              <div class="col-md-6">
+                <p class="text-muted">Webcam Feed</p>
+                <video id="webcamVideo" class="demo-video" autoplay muted playsinline></video>
+              </div>
+              <div class="col-md-6">
+                <p class="text-muted">Processed Output</p>
+                <canvas id="processedCanvas" class="demo-canvas"></canvas>
+              </div>
+            </div>
+            <div class="text-center mt-3">
+              <button class="btn btn-accent px-4 py-2 me-3" onclick="startRealtime()">Start Realtime</button>
+              <button class="btn btn-dark px-4 py-2" onclick="stopRealtime()">Stop Realtime</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6">
+          <h3 class="font-oswald">AN EDGE INTELLIGENT APPROACH</h3>
+          <p class="font-montserrat">To <span class="accent-text">Preventing Escalations</span></p>
+        </div>
+        <div class="col-md-6 text-md-end">
+          <p class="font-montserrat">© 2025 Edge Intelligence Team. All rights reserved.</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Client-side JavaScript -->
+  <script>
+    // ----- Uploaded Video Processing -----
+    let uploadedFile;
+    document.getElementById('videoInput').addEventListener('change', function() {
+      if (this.files && this.files[0]) {
+        uploadedFile = this.files[0];
+        const originalVideo = document.getElementById('originalVideo');
+        originalVideo.src = URL.createObjectURL(uploadedFile);
+        originalVideo.load();
+        originalVideo.play();
+      }
+    });
+
+    function startStream() {
+      // Reset any previous stop state on new start.
+      fetch('/stop_processing', { method: 'POST', body: JSON.stringify({ reset: true }), headers: {'Content-Type': 'application/json'} })
+          .catch(error => console.error("Error resetting stop state:", error));
+          
+      if (!uploadedFile) {
+        alert("Please select a video file first.");
+        return;
+      }
+      const formData = new FormData();
+      formData.append('video', uploadedFile);
+      fetch('/upload', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => {
+        if (response.redirected) {
+          // Set the processed stream <img> source to the streaming URL.
+          document.getElementById('processedStream').src = response.url + "?t=" + new Date().getTime();
+        } else {
+          alert("Video processing failed.");
+        }
+      })
+      .catch(error => {
+        console.error("Error processing video:", error);
+        alert("An error occurred during video processing.");
+      });
+    }
+
+    document.getElementById('stopProcessingBtn').addEventListener('click', function() {
+      fetch('/stop_processing', { method: 'POST' })
+          .then(response => response.json())
+          .then(data => {
+              console.log(data.message); 
+              clearProcessedOutput(); // Clear the processed video frames
+          })
+          .catch(error => console.error('Error stopping processing:', error));
+    });
+
+    // Function to clear processed video frames
+    function clearProcessedOutput() {
+      const outputCanvas = document.getElementById('processedCanvas');
+      if (outputCanvas) {
+          const ctx = outputCanvas.getContext('2d');
+          ctx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+      }
+      // Also clear the <img> for uploaded video processing
+      const processedStreamImg = document.getElementById('processedStream');
+      if (processedStreamImg) {
+          processedStreamImg.src = "";
+      }
+    }
+
+    // ----- Realtime Webcam Processing -----
+    const videoWidth = 320;
+    const videoHeight = 240;
+    let videoStream = null;
+    let realtimeInterval = null;
+    const socket = io();
+
+    // Log connection status for debugging
+    socket.on('connect', () => {
+      console.log("Socket.IO connected.");
+    });
+
+    function startRealtime() {
+      stopRealtime();
+      navigator.mediaDevices.getUserMedia({ video: { width: videoWidth, height: videoHeight }, audio: false })
+        .then(stream => {
+          videoStream = stream;
+          const webcamVideo = document.getElementById('webcamVideo');
+          webcamVideo.width = videoWidth;
+          webcamVideo.height = videoHeight;
+          webcamVideo.srcObject = stream;
+          webcamVideo.play();
+
+          webcamVideo.onloadedmetadata = () => {
+            // Create offscreen canvas with fixed resolution
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = videoWidth;
+            offCanvas.height = videoHeight;
+            const offCtx = offCanvas.getContext('2d');
+
+            // Set processed output canvas dimensions
+            const outputCanvas = document.getElementById('processedCanvas');
+            outputCanvas.width = videoWidth;
+            outputCanvas.height = videoHeight;
+
+            realtimeInterval = setInterval(() => {
+              offCtx.drawImage(webcamVideo, 0, 0, videoWidth, videoHeight);
+              const dataURL = offCanvas.toDataURL('image/jpeg', 0.6);
+              socket.emit('frame', { image: dataURL });
+            }, 150);
+          };
+        })
+        .catch(err => {
+          console.error("Error accessing webcam:", err);
+          alert("Could not access the webcam.");
+        });
+    }
+
+    function stopRealtime() {
+      if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        videoStream = null;
+      }
+      if (realtimeInterval) {
+        clearInterval(realtimeInterval);
+        realtimeInterval = null;
+      }
+      // Clear the processed output canvas immediately
+      const outputCanvas = document.getElementById('processedCanvas');
+      const ctx = outputCanvas.getContext('2d');
+      ctx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+      // Optionally, also clear the webcam feed if desired
+      const webcamVideo = document.getElementById('webcamVideo');
+      webcamVideo.srcObject = null;
+    }
+
+    socket.on('processed_frame', data => {
+      const img = new Image();
+      img.onload = () => {
+        const outputCanvas = document.getElementById('processedCanvas');
+        const ctx = outputCanvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, videoWidth, videoHeight);
+      };
+      img.src = data.image;
+      console.log("Received processed frame.");
+    });
+  </script>
+</body>
+</html>
