@@ -15,9 +15,9 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 print("Starting app...")
 
-# -------------------------------
+
 # Haar Cascade Initialization with Check
-# -------------------------------
+
 cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 if not os.path.exists(cascade_path):
     raise FileNotFoundError(f"Haar cascade file not found: {cascade_path}")
@@ -26,9 +26,9 @@ haar_face_cascade = cv2.CascadeClassifier(cascade_path)
 if haar_face_cascade.empty():
     raise ValueError("Failed to load Haar cascade classifier. Check the file path.")
 
-# -------------------------------
+
 # Global Model Initialization
-# -------------------------------
+
 face_cache = {}  # For temporal consistency: {track_id: (boxes, last_frame)}
 CACHE_MAX_AGE = 2  # frames
 
@@ -47,9 +47,9 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # Global event to signal stopping of processing (for uploaded video)
 stop_processing_event = threading.Event()
 
-# -------------------------------
+
 # Helper Functions
-# -------------------------------
+
 def enhance_frame(frame):
     """Enhance the frame using global histogram equalization and CLAHE."""
     yuv = cv2.cvtColor(frame, cv2.COLOR_BGR2YUV)
@@ -194,6 +194,11 @@ def generate_stream(filename):
     while cap.isOpened():
         if stop_processing_event.is_set():
             print("Stop processing event set. Exiting video stream.")
+            # Yield one blank frame to clear the output, then break
+            blank_frame = np.zeros((480, 1280, 3), dtype=np.uint8)
+            ret, jpeg = cv2.imencode('.jpg', blank_frame)
+            if ret:
+                yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
             break
         ret, frame = cap.read()
         if not ret:
@@ -215,13 +220,12 @@ def generate_stream(filename):
         ret, jpeg = cv2.imencode('.jpg', final_frame)
         if not ret:
             continue
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
+        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
     cap.release()
 
-# -------------------------------
+
 # Flask Routes (All Pages)
-# -------------------------------
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -238,9 +242,9 @@ def face_anonymizer():
 def yolo_page():
     return render_template('yolo.html')
 
-# -------------------------------
+
 # Routes for Face Anonymizer Functionality
-# -------------------------------
+
 @app.route('/upload', methods=['POST'])
 def upload_video():
     file = request.files.get('video')
@@ -256,18 +260,22 @@ def process_video_stream(filename):
     return Response(generate_stream(filename),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
-# -------------------------------
+
 # Endpoint to Stop Uploaded Video Processing
-# -------------------------------
+
 @app.route('/stop_processing', methods=['POST'])
 def stop_processing_video():
-    """Stops the uploaded video processing immediately"""
+    data = request.get_json() or {}
+    # If a reset flag is provided, clear the stop event
+    if data.get("reset", False):
+        stop_processing_event.clear()
+        return jsonify({"message": "Stop state reset"}), 200
     stop_processing_event.set()
     return jsonify({"message": "Processing stopped"}), 200
 
-# -------------------------------
+
 # Socket.IO for Realtime Webcam Processing
-# -------------------------------
+
 @socketio.on('frame')
 def handle_frame(data):
     try:

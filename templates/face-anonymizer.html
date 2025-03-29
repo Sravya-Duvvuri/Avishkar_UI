@@ -10,7 +10,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Socket.IO Library (without integrity attribute) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <!-- Custom CSS -->
   <style>
     :root {
       --primary-color: #212529;
@@ -312,7 +311,7 @@
       const outputCanvas = document.getElementById('processedCanvas');
       const ctx = outputCanvas.getContext('2d');
       ctx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
-      // Optionally, also clear the webcam feed if desired
+      // Also clear the webcam feed if desired
       const webcamVideo = document.getElementById('webcamVideo');
       webcamVideo.srcObject = null;
     }
