@@ -9,11 +9,69 @@ from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from facenet_pytorch import MTCNN
 import threading
+from collections import deque
+import torch
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 print("Starting app...")
+# Directory for uploaded video files
+UPLOAD_DIR = os.path.join(os.getcwd(), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+import torch.nn as nn
+import torch.nn.functional as F
+
+class Enhanced3DCNN(nn.Module):
+    def __init__(self, num_classes=2):
+        super(Enhanced3DCNN, self).__init__()
+        # Block 1
+        self.conv1 = nn.Conv3d(3, 16, kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm3d(16)
+        self.pool1 = nn.MaxPool3d(2)  # halves dimensions
+
+        # Block 2
+        self.conv2 = nn.Conv3d(16, 32, kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm3d(32)
+        self.pool2 = nn.MaxPool3d(2)
+
+        # Block 3
+        self.conv3 = nn.Conv3d(32, 64, kernel_size=3, padding=1)
+        self.bn3 = nn.BatchNorm3d(64)
+        self.pool3 = nn.MaxPool3d(2)
+
+        # Block 4
+        self.conv4 = nn.Conv3d(64, 128, kernel_size=3, padding=1)
+        self.bn4 = nn.BatchNorm3d(128)
+        self.pool4 = nn.MaxPool3d(2)
+
+        # Fully Connected layers with dropout
+        self.adapt_pool = nn.AdaptiveAvgPool3d((1, 1, 1))
+        self.dropout = nn.Dropout(0.6)
+        self.fc = nn.Linear(128, num_classes)
+        
+    def forward(self, x): 
+        # x: (B, C, T, H, W)
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = self.pool1(x)
+        x = F.relu(self.bn2(self.conv2(x)))
+        x = self.pool2(x)
+        x = F.relu(self.bn3(self.conv3(x)))
+        x = self.pool3(x)
+        x = F.relu(self.bn4(self.conv4(x)))
+        x = self.pool4(x)
+        x = self.adapt_pool(x)
+        x = x.view(x.size(0), -1)
+        x = self.dropout(x)
+        x = self.fc(x)
+        return x
+
+# 3D CNN Model loading using checkpoint
+model = Enhanced3DCNN(num_classes=2)  # Create an instance of your architecture
+checkpoint = torch.load("model_checkpoint_epoch_70.pth", map_location=torch.device('cpu'))
+model.load_state_dict(checkpoint['model_state_dict'])
+model.eval()
 
 
 # Haar Cascade Initialization with Check
@@ -172,52 +230,59 @@ def process_frame(frame):
                     print("Warning: Face ROI is empty or invalid")
     return processed_frame
 
-def generate_stream(filename):
+def generate_stream_3dcnn(filename, window_size=16, stride=8):
     """
     Generator that reads the uploaded video file frame-by-frame,
-    processes each frame, and returns an MJPEG stream.
-    The output frame is a side-by-side comparison of the original (non-blurred)
-    and processed (blurred) frames, with a labeled banner on top.
-    Processing stops immediately if stop_processing_event is set.
+    uses a sliding window of frames as input for the 3D CNN, and overlays text for each processing stage.
     """
-    # Clear any previous stop event at start
-    stop_processing_event.clear()
     video_path = os.path.join(UPLOAD_DIR, filename)
     cap = cv2.VideoCapture(video_path)
-    banner_height = 40  # Height of the label banner
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    font_scale = 1.0
-    font_thickness = 2
-    text_color = (255, 255, 255)  # White text
-    banner_color = (0, 0, 0)        # Black background
-
+    frames_window = deque(maxlen=window_size)
+    
     while cap.isOpened():
-        if stop_processing_event.is_set():
-            print("Stop processing event set. Exiting video stream.")
-            # Yield one blank frame to clear the output, then break
-            blank_frame = np.zeros((480, 1280, 3), dtype=np.uint8)
-            ret, jpeg = cv2.imencode('.jpg', blank_frame)
-            if ret:
-                yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
-            break
         ret, frame = cap.read()
         if not ret:
             break
-        original_frame = frame.copy()
-        processed_frame = process_frame(frame.copy())
-        combined = np.hstack((original_frame, processed_frame))
-        banner = np.full((banner_height, combined.shape[1], 3), banner_color, dtype=np.uint8)
-        half_width = combined.shape[1] // 2
-        (orig_text_w, orig_text_h), _ = cv2.getTextSize("Original", font, font_scale, font_thickness)
-        (proc_text_w, proc_text_h), _ = cv2.getTextSize("Processed", font, font_scale, font_thickness)
-        orig_x = (half_width - orig_text_w) // 2
-        orig_y = (banner_height + orig_text_h) // 2 - 5
-        proc_x = half_width + (half_width - proc_text_w) // 2
-        proc_y = orig_y
-        cv2.putText(banner, "Original", (orig_x, orig_y), font, font_scale, text_color, font_thickness, cv2.LINE_AA)
-        cv2.putText(banner, "Processed", (proc_x, proc_y), font, font_scale, text_color, font_thickness, cv2.LINE_AA)
-        final_frame = np.vstack((banner, combined))
-        ret, jpeg = cv2.imencode('.jpg', final_frame)
+
+        orig_frame = frame.copy()
+
+        # Preprocess current frame for the model: convert to RGB and resize to (112,112)
+        preprocessed = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        preprocessed = cv2.resize(preprocessed, (112, 112))
+        frames_window.append(preprocessed)
+        
+        # Only run inference if we have a full window
+        if len(frames_window) < window_size:
+            stage_text = f"Accumulating frames: {len(frames_window)}/{window_size}"
+            overlay_frame = cv2.putText(orig_frame, stage_text, (10, 30),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+        else:
+            # We have a full window: run inference
+            stage_text = "Running 3D CNN inference..."
+            overlay_frame = cv2.putText(orig_frame, stage_text, (10, 30),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
+            # Prepare input tensor: (1, C, T, H, W)
+            clip = np.stack(list(frames_window), axis=0)   # (T, H, W, C)
+            clip = clip.transpose(3, 0, 1, 2)               # (C, T, H, W)
+            clip = clip / 255.0                             # Normalize to [0,1]
+            input_tensor = torch.from_numpy(clip).float().unsqueeze(0)  # (1, C, T, H, W)
+
+            with torch.no_grad():
+                outputs = model(input_tensor)
+                pred_prob = torch.softmax(outputs, dim=1)
+                pred_class = torch.argmax(pred_prob, dim=1).item()
+                label = "Violence Detected" if pred_class == 1 else "No Violence Detected"
+                confidence = pred_prob[0, pred_class].item()
+                stage_text = f"Prediction: {label} (Confidence: {confidence:.2f})"
+            overlay_frame = cv2.putText(overlay_frame, stage_text, (10, 70),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+            
+            # Slide the window: remove first 'stride' frames if possible.
+            for _ in range(stride):
+                if frames_window:
+                    frames_window.popleft()
+
+        ret, jpeg = cv2.imencode('.jpg', overlay_frame)
         if not ret:
             continue
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
@@ -237,10 +302,6 @@ def offloading():
 @app.route('/face-anonymizer')
 def face_anonymizer():
     return render_template('face-anonymizer.html')
-
-@app.route('/yolo')
-def yolo_page():
-    return render_template('yolo.html')
 
 
 # Routes for Face Anonymizer Functionality
@@ -275,7 +336,6 @@ def stop_processing_video():
 
 
 # Socket.IO for Realtime Webcam Processing
-
 @socketio.on('frame')
 def handle_frame(data):
     try:
@@ -294,6 +354,89 @@ def handle_frame(data):
     b64_encoded = base64.b64encode(jpeg.tobytes()).decode('utf-8')
     data_url = 'data:image/jpeg;base64,' + b64_encoded
     emit('processed_frame', {'image': data_url})
+
+# 3D CNN Processing Generator
+
+def generate_stream_3dcnn(filename):
+    """
+    Generator that reads the uploaded video file frame-by-frame,
+    accumulates a clip of frames (e.g. 16 frames) as input for the 3D CNN,
+    and overlays text for each processing stage.
+    """
+    video_path = os.path.join(UPLOAD_DIR, filename)
+    cap = cv2.VideoCapture(video_path)
+    window_size = 16  # Number of frames to form a clip
+    frames_window = deque(maxlen=window_size)
+    
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        orig_frame = frame.copy()
+
+        # Stage 1: Accumulate Frames
+        # For 3D CNNs, we usually need a fixed number of frames.
+        # Here we convert the frame to RGB and resize for the model (e.g., 112x112).
+        preprocessed = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        preprocessed = cv2.resize(preprocessed, (112, 112))
+        frames_window.append(preprocessed)
+        
+        if len(frames_window) < window_size:
+            stage_text = f"Accumulating frames: {len(frames_window)}/{window_size}"
+            overlay_frame = cv2.putText(orig_frame, stage_text, (10, 30),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+        else:
+            # Stage 2: Preprocessing & Inference
+            stage_text = "Running 3D CNN inference..."
+            overlay_frame = cv2.putText(orig_frame, stage_text, (10, 30),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
+            # Prepare input tensor: shape (1, C, T, H, W)
+            clip = np.stack(list(frames_window), axis=0)   # (T, H, W, C)
+            clip = clip.transpose(3, 0, 1, 2)               # (C, T, H, W)
+            clip = clip / 255.0                             # Normalize to [0,1]
+            input_tensor = torch.from_numpy(clip).float().unsqueeze(0)  # (1, C, T, H, W)
+
+            # Stage 3: Model Prediction
+            with torch.no_grad():
+                outputs = model(input_tensor)
+                # Assuming the model outputs logits for 2 classes:
+                # class 0: No Violence, class 1: Violence
+                pred_prob = torch.softmax(outputs, dim=1)
+                pred_class = torch.argmax(pred_prob, dim=1).item()
+                label = "Violence Detected" if pred_class == 1 else "No Violence Detected"
+                confidence = pred_prob[0, pred_class].item()
+                stage_text = f"Prediction: {label} (Confidence: {confidence:.2f})"
+            overlay_frame = cv2.putText(overlay_frame, stage_text, (10, 70),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+        
+        ret, jpeg = cv2.imencode('.jpg', overlay_frame)
+        if not ret:
+            continue
+        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
+    cap.release()
+
+# Flask Routes for 3D CNN Demo
+@app.route('/CNN_3D')
+def CNN_3D():
+    # Render a template with an upload form and detection button
+    return render_template('CNN_3D.html')
+
+@app.route('/upload_3dcnn', methods=['POST'])
+def upload_video_3dcnn():
+    file = request.files.get('video')
+    if not file:
+        return "No video uploaded", 400
+    filename = secure_filename(file.filename)
+    save_path = os.path.join(UPLOAD_DIR, filename)
+    file.save(save_path)
+    return jsonify({'stream_url': url_for('process_video_stream_3dcnn', filename=filename)})
+
+@app.route('/process_video_3dcnn/<filename>')
+def process_video_stream_3dcnn(filename):
+    return Response(generate_stream_3dcnn(filename),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)
