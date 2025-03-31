@@ -167,9 +167,6 @@
             <a class="nav-link active" href="{{ url_for('index') }}">Home</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('offloading') }}">Offloading</a>
-          </li>
-          <li class="nav-item">
             <a class="nav-link" href="{{ url_for('face_anonymizer') }}">Face Anonymizer</a>
           </li>
           <li class="nav-item">
@@ -267,9 +264,9 @@
             <h4 class="mt-4">Live Detection Stream</h4>
             <img id="stream" src="" alt="Video Stream">
           </div>
-          
           <div class="text-center mt-3">
             <button id="viewResultsBtn" class="btn btn-accent px-4 py-2" style="display: none;">View Results</button>
+            <a href="/CNN_3D"><button id="clearBtn" class="btn btn-accent px-4 py-2">Clear and Upload New Video</button></a>
           </div>
         </div>
       </div>

@@ -302,10 +302,18 @@ def generate_stream_3dcnn(filename):
             outputs = model(input_tensor)
             pred_prob = torch.softmax(outputs, dim=1)
             pred_class = torch.argmax(pred_prob, dim=1).item()
-            label = "Violence Detected" if pred_class == 1 else "No Violence Detected"
             confidence = pred_prob[0, pred_class].item()
-            stage_text = f"Prediction: {label} (Confidence: {confidence:.2f})"
-
+            # If confidence is low (<0.5), process frames using face blurring
+            if confidence < 0.6:
+                # Re-run each frame through the face anonymization pipeline
+                processed_frames = []
+                for frame in clip_frames:
+                    processed_frames.append(process_frame(frame))
+                # You can also update stage_text to show that face anonymization is applied.
+                stage_text = f"Low confidence ({confidence:.2f}). Applying face anonymization."
+            else:
+                label = "Violence Detected" if pred_class == 1 else "No Violence Detected"
+                stage_text = f"Prediction: {label} (Confidence: {confidence:.2f})"
         # For visualization, overlay the prediction text on each frame of the segment.
         for frame in clip_frames:
             overlay_frame = frame.copy()
@@ -323,10 +331,6 @@ def generate_stream_3dcnn(filename):
 @app.route('/')
 def index():
     return render_template('index.html')
-
-@app.route('/offloading')
-def offloading():
-    return render_template('offloading.html')
 
 @app.route('/face-anonymizer')
 def face_anonymizer():

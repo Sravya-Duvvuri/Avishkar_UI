@@ -91,9 +91,6 @@
             <a class="nav-link active" href="{{ url_for('index') }}">Home</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('offloading') }}">Offloading</a>
-          </li>
-          <li class="nav-item">
             <a class="nav-link" href="{{ url_for('face_anonymizer') }}">Face Anonymizer</a>
           </li>
           <li class="nav-item">
@@ -137,7 +134,7 @@
             <img id="processedStream" class="processed-stream" src="" alt="Processed Video Stream">
             <div class="text-center mt-3">
               <button class="btn btn-accent px-4 py-2" onclick="startStream()">Process Video</button>
-              <button id="stopProcessingBtn" class="btn btn-danger">Stop Processing</button>
+<!--              <button id="stopProcessingBtn" class="btn btn-danger">Stop Processing</button>-->
             </div>
           </div>
           <hr class="my-4">
@@ -160,8 +157,8 @@
             </div>
           </div>
         </div>
+        <a href="/face-anonymizer"><button id="clearBtn" class="btn btn-accent px-4 py-2">Clear and Upload New Video</button></a>
       </div>
-      
     </div>
   </section>
 
@@ -226,15 +223,6 @@
       });
     }
 
-    document.getElementById('stopProcessingBtn').addEventListener('click', function() {
-      fetch('/stop_processing', { method: 'POST' })
-          .then(response => response.json())
-          .then(data => {
-              console.log(data.message); 
-              clearProcessedOutput(); // Clear the processed video frames
-          })
-          .catch(error => console.error('Error stopping processing:', error));
-    });
 
     // Function to clear processed video frames
     function clearProcessedOutput() {
