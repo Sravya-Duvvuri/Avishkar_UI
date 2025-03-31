@@ -230,62 +230,91 @@ def process_frame(frame):
                     print("Warning: Face ROI is empty or invalid")
     return processed_frame
 
-def generate_stream_3dcnn(filename, window_size=16, stride=8):
+def generate_stream_3dcnn(filename):
     """
-    Generator that reads the uploaded video file frame-by-frame,
-    uses a sliding window of frames as input for the 3D CNN, and overlays text for each processing stage.
+    Generator that reads the uploaded video file and processes it in segments.
+    For videos at least 60 seconds long, it processes 16 uniformly sampled frames from
+    each one-minute segment. For shorter videos, it samples 16 equally spaced frames from
+    the entire video.
+    Each segment is run through the 3D CNN model and the prediction overlay is added.
     """
     video_path = os.path.join(UPLOAD_DIR, filename)
     cap = cv2.VideoCapture(video_path)
-    frames_window = deque(maxlen=window_size)
-    
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
+    if not cap.isOpened():
+        print("Error opening video file")
+        return
 
-        orig_frame = frame.copy()
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    if fps <= 0 or total_frames <= 0:
+        print("Invalid video parameters.")
+        cap.release()
+        return
 
-        # Preprocess current frame for the model: convert to RGB and resize to (112,112)
-        preprocessed = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        preprocessed = cv2.resize(preprocessed, (112, 112))
-        frames_window.append(preprocessed)
-        
-        # Only run inference if we have a full window
-        if len(frames_window) < window_size:
-            stage_text = f"Accumulating frames: {len(frames_window)}/{window_size}"
-            overlay_frame = cv2.putText(orig_frame, stage_text, (10, 30),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+    video_duration = total_frames / fps  # in seconds
+
+    segments = []
+    if video_duration >= 60:
+        # Divide video into one-minute segments
+        num_minutes = int(video_duration // 60)
+        for i in range(num_minutes):
+            start_frame = int(i * 60 * fps)
+            end_frame = int(min((i+1) * 60 * fps, total_frames))
+            segments.append((start_frame, end_frame))
+        # Optionally, add the last partial minute segment if any
+        if total_frames > num_minutes * 60 * fps:
+            segments.append((int(num_minutes * 60 * fps), total_frames))
+    else:
+        # Only one segment: the entire video
+        segments.append((0, total_frames))
+
+    for (start_frame, end_frame) in segments:
+        # Sample 16 uniformly spaced frame indices from this segment
+        num_segment_frames = end_frame - start_frame
+        if num_segment_frames < 16:
+            indices = np.linspace(start_frame, end_frame - 1, num=16, dtype=int)
         else:
-            # We have a full window: run inference
-            stage_text = "Running 3D CNN inference..."
-            overlay_frame = cv2.putText(orig_frame, stage_text, (10, 30),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
-            # Prepare input tensor: (1, C, T, H, W)
-            clip = np.stack(list(frames_window), axis=0)   # (T, H, W, C)
-            clip = clip.transpose(3, 0, 1, 2)               # (C, T, H, W)
-            clip = clip / 255.0                             # Normalize to [0,1]
-            input_tensor = torch.from_numpy(clip).float().unsqueeze(0)  # (1, C, T, H, W)
+            indices = np.linspace(start_frame, end_frame - 1, num=16, dtype=int)
+        
+        clip_frames = []
+        # For each index, set the position and read the frame
+        for idx in indices:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
+            ret, frame = cap.read()
+            if not ret:
+                # If we fail to read, use a black frame
+                frame = np.zeros((112,112,3), dtype=np.uint8)
+            clip_frames.append(frame)
+        
+        # Preprocess frames for the 3D CNN: convert to RGB and resize to (112,112)
+        processed_clip = []
+        for frame in clip_frames:
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            resized = cv2.resize(rgb, (112, 112))
+            processed_clip.append(resized)
+        clip = np.stack(processed_clip, axis=0)   # shape: (T, H, W, C)
+        clip = clip.transpose(3, 0, 1, 2)           # shape: (C, T, H, W)
+        clip = clip / 255.0                         # normalize to [0,1]
+        input_tensor = torch.from_numpy(clip).float().unsqueeze(0)  # (1, C, T, H, W)
 
-            with torch.no_grad():
-                outputs = model(input_tensor)
-                pred_prob = torch.softmax(outputs, dim=1)
-                pred_class = torch.argmax(pred_prob, dim=1).item()
-                label = "Violence Detected" if pred_class == 1 else "No Violence Detected"
-                confidence = pred_prob[0, pred_class].item()
-                stage_text = f"Prediction: {label} (Confidence: {confidence:.2f})"
-            overlay_frame = cv2.putText(overlay_frame, stage_text, (10, 70),
+        # Run inference on the sampled clip
+        with torch.no_grad():
+            outputs = model(input_tensor)
+            pred_prob = torch.softmax(outputs, dim=1)
+            pred_class = torch.argmax(pred_prob, dim=1).item()
+            label = "Violence Detected" if pred_class == 1 else "No Violence Detected"
+            confidence = pred_prob[0, pred_class].item()
+            stage_text = f"Prediction: {label} (Confidence: {confidence:.2f})"
+
+        # For visualization, overlay the prediction text on each frame of the segment.
+        for frame in clip_frames:
+            overlay_frame = frame.copy()
+            overlay_frame = cv2.putText(overlay_frame, stage_text, (10, 30),
                                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
-            
-            # Slide the window: remove first 'stride' frames if possible.
-            for _ in range(stride):
-                if frames_window:
-                    frames_window.popleft()
-
-        ret, jpeg = cv2.imencode('.jpg', overlay_frame)
-        if not ret:
-            continue
-        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
+            ret, jpeg = cv2.imencode('.jpg', overlay_frame)
+            if not ret:
+                continue
+            yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
     cap.release()
 
 
@@ -322,6 +351,57 @@ def process_video_stream(filename):
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
+def generate_stream(filename):
+    """
+    Generator that reads the uploaded video file frame-by-frame,
+    processes each frame, and returns an MJPEG stream.
+    The output frame is a side-by-side comparison of the original (non-blurred)
+    and processed (blurred) frames, with a labeled banner on top.
+    Processing stops immediately if stop_processing_event is set.
+    """
+    # Clear any previous stop event at start
+    stop_processing_event.clear()
+    video_path = os.path.join(UPLOAD_DIR, filename)
+    cap = cv2.VideoCapture(video_path)
+    banner_height = 40  # Height of the label banner
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 1.0
+    font_thickness = 2
+    text_color = (255, 255, 255)  # White text
+    banner_color = (0, 0, 0)        # Black background
+
+    while cap.isOpened():
+        if stop_processing_event.is_set():
+            print("Stop processing event set. Exiting video stream.")
+            # Yield one blank frame to clear the output, then break
+            blank_frame = np.zeros((480, 1280, 3), dtype=np.uint8)
+            ret, jpeg = cv2.imencode('.jpg', blank_frame)
+            if ret:
+                yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
+            break
+        ret, frame = cap.read()
+        if not ret:
+            break
+        original_frame = frame.copy()
+        processed_frame = process_frame(frame.copy())
+        combined = np.hstack((original_frame, processed_frame))
+        banner = np.full((banner_height, combined.shape[1], 3), banner_color, dtype=np.uint8)
+        half_width = combined.shape[1] // 2
+        (orig_text_w, orig_text_h), _ = cv2.getTextSize("Original", font, font_scale, font_thickness)
+        (proc_text_w, proc_text_h), _ = cv2.getTextSize("Processed", font, font_scale, font_thickness)
+        orig_x = (half_width - orig_text_w) // 2
+        orig_y = (banner_height + orig_text_h) // 2 - 5
+        proc_x = half_width + (half_width - proc_text_w) // 2
+        proc_y = orig_y
+        cv2.putText(banner, "Original", (orig_x, orig_y), font, font_scale, text_color, font_thickness, cv2.LINE_AA)
+        cv2.putText(banner, "Processed", (proc_x, proc_y), font, font_scale, text_color, font_thickness, cv2.LINE_AA)
+        final_frame = np.vstack((banner, combined))
+        ret, jpeg = cv2.imencode('.jpg', final_frame)
+        if not ret:
+            continue
+        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
+    cap.release()
+
 # Endpoint to Stop Uploaded Video Processing
 
 @app.route('/stop_processing', methods=['POST'])
@@ -354,67 +434,6 @@ def handle_frame(data):
     b64_encoded = base64.b64encode(jpeg.tobytes()).decode('utf-8')
     data_url = 'data:image/jpeg;base64,' + b64_encoded
     emit('processed_frame', {'image': data_url})
-
-# 3D CNN Processing Generator
-
-def generate_stream_3dcnn(filename):
-    """
-    Generator that reads the uploaded video file frame-by-frame,
-    accumulates a clip of frames (e.g. 16 frames) as input for the 3D CNN,
-    and overlays text for each processing stage.
-    """
-    video_path = os.path.join(UPLOAD_DIR, filename)
-    cap = cv2.VideoCapture(video_path)
-    window_size = 16  # Number of frames to form a clip
-    frames_window = deque(maxlen=window_size)
-    
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        orig_frame = frame.copy()
-
-        # Stage 1: Accumulate Frames
-        # For 3D CNNs, we usually need a fixed number of frames.
-        # Here we convert the frame to RGB and resize for the model (e.g., 112x112).
-        preprocessed = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        preprocessed = cv2.resize(preprocessed, (112, 112))
-        frames_window.append(preprocessed)
-        
-        if len(frames_window) < window_size:
-            stage_text = f"Accumulating frames: {len(frames_window)}/{window_size}"
-            overlay_frame = cv2.putText(orig_frame, stage_text, (10, 30),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
-        else:
-            # Stage 2: Preprocessing & Inference
-            stage_text = "Running 3D CNN inference..."
-            overlay_frame = cv2.putText(orig_frame, stage_text, (10, 30),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
-            # Prepare input tensor: shape (1, C, T, H, W)
-            clip = np.stack(list(frames_window), axis=0)   # (T, H, W, C)
-            clip = clip.transpose(3, 0, 1, 2)               # (C, T, H, W)
-            clip = clip / 255.0                             # Normalize to [0,1]
-            input_tensor = torch.from_numpy(clip).float().unsqueeze(0)  # (1, C, T, H, W)
-
-            # Stage 3: Model Prediction
-            with torch.no_grad():
-                outputs = model(input_tensor)
-                # Assuming the model outputs logits for 2 classes:
-                # class 0: No Violence, class 1: Violence
-                pred_prob = torch.softmax(outputs, dim=1)
-                pred_class = torch.argmax(pred_prob, dim=1).item()
-                label = "Violence Detected" if pred_class == 1 else "No Violence Detected"
-                confidence = pred_prob[0, pred_class].item()
-                stage_text = f"Prediction: {label} (Confidence: {confidence:.2f})"
-            overlay_frame = cv2.putText(overlay_frame, stage_text, (10, 70),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
-        
-        ret, jpeg = cv2.imencode('.jpg', overlay_frame)
-        if not ret:
-            continue
-        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
-    cap.release()
 
 # Flask Routes for 3D CNN Demo
 @app.route('/CNN_3D')
